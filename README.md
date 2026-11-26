@@ -1,8 +1,8 @@
 # Ridge Runner — Alpine Courier
 
-[![make.fun](https://make.fun/badge.svg?competition=best-flight-game-20261126-0057)](https://make.fun/bounty/best-flight-game-20261126-0057)
-[![make.fun](https://make.fun/badge.svg?competition=best-flight-game-20261126-0057&type=entries)](https://make.fun/bounty/best-flight-game-20261126-0057)
-[![make.fun](https://make.fun/badge.svg?competition=best-flight-game-20261126-0057&type=prize)](https://make.fun/bounty/best-flight-game-20261126-0057)
+[![make.fun · best-flight-game-20261126-0057](https://make.fun/badge/best-flight-game-20261126-0057.svg)](https://make.fun/bounty/best-flight-game-20261126-0057?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
+[![rank](https://make.fun/badge/best-flight-game-20261126-0057/yuhaof53-ui/makefun-flight-game-20261126/rank.svg)](https://make.fun/bounty/best-flight-game-20261126-0057/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
+[![reward](https://make.fun/badge/best-flight-game-20261126-0057/yuhaof53-ui/makefun-flight-game-20261126/reward.svg)](https://make.fun/bounty/best-flight-game-20261126-0057?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
 
 A bush-plane courier game for the make.fun best flight game bounty. Fly a
 small prop plane through an alpine valley: deliver a parcel to Laketown
