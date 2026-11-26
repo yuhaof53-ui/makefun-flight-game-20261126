@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Ridge Runner — Alpine Courier</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0c1420; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #hud { position: fixed; inset: 0; pointer-events: none; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #e8f0e8; }
+  .panel { background: rgba(8, 18, 28, 0.55); border: 1px solid rgba(255, 176, 32, 0.35); border-radius: 8px; padding: 8px 12px; backdrop-filter: blur(2px); }
+  .glow { text-shadow: 0 0 8px rgba(255, 176, 32, 0.8); }
+  #hud-instruments { position: absolute; top: 12px; left: 12px; display: flex; gap: 18px; }
+  #hud-instruments .readout { text-align: left; }
+  #hud-instruments .label { font-size: 10px; letter-spacing: 2px; color: #9fc4e8; }
+  #hud-instruments .value { font-size: 22px; font-weight: 700; color: #ffd76a; }
+  #hud-instruments .value.small { font-size: 15px; }
+  #hud-systems { position: absolute; top: 12px; right: 12px; width: 210px; }
+  #hud-systems .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 11px; letter-spacing: 1px; }
+  #hud-systems .row .name { width: 34px; color: #9fc4e8; }
+  #hud-systems .bar { flex: 1; height: 10px; background: rgba(255, 255, 255, 0.12); border-radius: 5px; overflow: hidden; }
+  #hud-systems .bar i { display: block; height: 100%; background: #7ee2a8; border-radius: 5px; transition: width 0.15s linear; }
+  #hud-systems .bar i.low { background: #ff5a4e; }
+  #hud-systems .bar i.thr { background: #ffb020; }
+  #hud-score-line { margin-top: 6px; font-size: 13px; color: #ffd76a; }
+  #hud-objective { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); max-width: 46%; text-align: center; font-size: 14px; letter-spacing: 0.5px; color: #e8f0e8; }
+  #hud-toast { position: absolute; top: 22%; left: 50%; transform: translateX(-50%); font-size: 26px; font-weight: 700; color: #ffd76a; opacity: 0; transition: opacity 0.25s; }
+  #hud-toast.show { opacity: 1; }
+  #hud-compass { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); width: 340px; height: 26px; overflow: hidden; text-align: center; background: rgba(8, 18, 28, 0.55); border: 1px solid rgba(255, 176, 32, 0.35); border-radius: 8px; }
+  #hud-compass span { position: absolute; top: 3px; transform: translateX(-50%); font-size: 13px; color: #eef4ee; text-shadow: 0 0 6px rgba(0, 0, 0, 0.9); }
+  #hud-attitude { position: absolute; bottom: 14px; left: 12px; }
+  #attitude { display: block; border-radius: 50%; background: rgba(8, 18, 28, 0.55); border: 1px solid rgba(255, 176, 32, 0.35); }
+  #hud-hint { position: absolute; bottom: 14px; right: 12px; font-size: 11px; line-height: 1.7; color: #d8e4d8; text-align: right; background: rgba(8, 18, 28, 0.55); border: 1px solid rgba(255, 176, 32, 0.35); border-radius: 8px; padding: 6px 10px; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 12, 20, 0.62); color: #eef4ee; text-align: center; pointer-events: none; }
+  .screen.hidden { display: none; }
+  .screen h1 { font-size: 54px; margin: 0 0 6px; letter-spacing: 6px; color: #ffb020; text-shadow: 0 0 24px rgba(255, 176, 32, 0.7); }
+  .screen h2 { font-size: 17px; font-weight: 400; margin: 0 0 22px; color: #cfe5ff; letter-spacing: 1px; }
+  .screen p { font-size: 14px; line-height: 1.9; margin: 0 0 18px; color: #d8e4d8; }
+  .screen .keys { font-size: 12px; color: #9fc4e8; line-height: 2; }
+  .screen .big { font-size: 19px; color: #ffd76a; margin-top: 10px; letter-spacing: 1px; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Ridge Runner: fly the bush plane through the valley, deliver parcels and fly the rings"></canvas>
+<div id="hud">
+  <div id="hud-instruments" class="panel">
+    <div class="readout"><div class="label">ALT</div><div class="value glow" id="hud-alt">0 ft</div></div>
+    <div class="readout"><div class="label">SPD</div><div class="value glow" id="hud-spd">0 kt</div></div>
+    <div class="readout"><div class="label">HDG</div><div class="value glow" id="hud-hdg">000° N</div></div>
+    <div class="readout"><div class="label">V/S</div><div class="value small" id="hud-vs">+0 fpm</div></div>
+  </div>
+  <div id="hud-systems" class="panel">
+    <div class="row"><span class="name">THR</span><span class="bar"><i class="thr" id="hud-thr-fill" style="width:0%"></i></span></div>
+    <div class="row"><span class="name">FUEL</span><span class="bar"><i id="hud-fuel-fill" style="width:100%"></i></span><span id="hud-fuel-text">100%</span></div>
+    <div class="row"><span class="name">HULL</span><span class="bar"><i id="hud-hull-fill" style="width:100%"></i></span></div>
+    <div id="hud-score-line">SCORE <span id="hud-score">0</span></div>
+  </div>
+  <div id="hud-objective" class="panel">Contract 1 — Parcel Run</div>
+  <div id="hud-toast"></div>
+  <div id="hud-compass"></div>
+  <div id="hud-attitude"><canvas id="attitude" width="120" height="120"></canvas></div>
+  <div id="hud-hint">ARROWS / WASD fly &nbsp;·&nbsp; SHIFT / CTRL throttle<br>MOUSE steers &nbsp;·&nbsp; WHEEL throttle &nbsp;·&nbsp; C camera &nbsp;·&nbsp; P pause &nbsp;·&nbsp; M mute</div>
+</div>
+<div id="screen-title" class="screen">
+  <h1>RIDGE RUNNER</h1>
+  <h2>Alpine Courier — three contracts, one valley, a tank of fuel</h2>
+  <p>Deliver the parcel to Laketown strip, fly all six sky rings,<br>and bring her home to Pinefield before the tank runs dry.<br>Land gently on a strip to refuel. The mountains do not forgive.</p>
+  <div class="keys">ARROWS / WASD — pitch &amp; bank &nbsp;&nbsp; SHIFT / CTRL — throttle<br>MOUSE — steer &nbsp;&nbsp; WHEEL — throttle &nbsp;&nbsp; C — cockpit view &nbsp;&nbsp; P — pause</div>
+  <div class="big">Press ENTER to fly</div>
+</div>
+<div id="screen-pause" class="screen hidden">
+  <h1>PAUSED</h1>
+  <p>The valley waits.</p>
+  <div class="big">Press P to keep flying</div>
+</div>
+<div id="screen-crash" class="screen hidden">
+  <h1>FLIGHT OVER</h1>
+  <p id="crash-reason">You hit the mountains.</p>
+  <p id="crash-score">Score 0</p>
+  <div class="big">Press R to fly again</div>
+</div>
+<p id="status" role="status" aria-live="polite"></p>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
